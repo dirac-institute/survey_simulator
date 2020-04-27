@@ -1,0 +1,34 @@
+To run
+    - do all the things in the original readme
+    - put pinpoint program in /survey_sim/
+    - after running DownloadKernels.sh, check downloaded kernels for 404 error, this can occur if the published kernels have been updated and their url's changed
+    
+Changes
+
+main.py 
+
+    - changed depreciated configparser commands
+    - changed
+         ephfile = os.path.join(os.getenv('OORB_DATA'), 'de405.dat')
+
+      to
+
+         ephfile = os.path.join('../main', 'de430.dat')
+        
+    - added multiprocessor functionality, for both spk generation and detection simulation, uses nProc line in input.config
+    - moved header printing from sso
+    - modified header to be usable when importing output to dataframe
+    
+telescope.py
+    
+    - added filter and fiveSigmaDepth columns to readFields function
+    - changed database query to pull correct columns for baseline_v1.4_10yrs.db
+    - modified pinpoint call in createspk function so that PATH no longer needs to be modified
+    
+sso.py
+    
+    - load the metakernel inside the simulate function to enable multiprocessing
+    - added function to translate visual magnitude to LSST filters
+    - modified shortlist funnction to return filters and limiting magnitude
+    - moved header printing to main.py so that only one header gets printed when using multiple processes
+
