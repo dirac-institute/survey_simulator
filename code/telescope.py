@@ -139,7 +139,7 @@ class telescopelist:
 class camera:
 
 
-    def __init__(self, configfile, ikfile):
+    def __init__(self, configfile, ikfile, filterfile):
 
         """Initialize a camera object
 
@@ -149,10 +149,13 @@ class camera:
                 Name of file containing camera description
             ikfile : string
                 name of NAIF SPICE Instrument Kernel
+            filterfile: string
+                name of file containing filter transformations appropriate for the population model
         
         """
         
         self.configfile = configfile
+        self.filterfile = filterfile
         self.ikfile=ikfile
         self.ckfile="test.ck"
         self.fkfile="test.fk"
@@ -168,20 +171,29 @@ class camera:
                 n_lines = 0
                 for row in reader:
                     n_lines=n_lines+1
-                    tmpx=np.tan(np.radians(float(row[0])))
-                    tmpy=np.tan(np.radians(float(row[1])))
-                    tmpz=1
-                    self.x.append(tmpx)
-                    self.y.append(tmpy)
-                    self.z.append(tmpz)
+                    if n_lines==1:
+                        if row[0]=='fill_factor':
+                            self.fillfactor = float(row[1])
+                    if n_lines>1:
+                        tmpx=np.tan(np.radians(float(row[0])))
+                        tmpy=np.tan(np.radians(float(row[1])))
+                        tmpz=1
+                        self.x.append(tmpx)
+                        self.y.append(tmpy)
+                        self.z.append(tmpz)
                 self.save_poly(self.ikfile,[0,0,1],self.x,self.y,self.z)
                 
             elif (type[0].lower() == 'circle'):
                 self.x=float(next(reader)[0])
                 self.save_circ(self.ikfile,[0,0,1],self.x)
+                self.fillfactor = float(next(reader)[1])
 
             else:
                 sys.exit("In file %s, instrument FOV is invalid. Only \"Circle\" or \"Polygon\" allowed." %(configfile))
+        
+        with open(filterfile, newline='') as f:
+            transform = pd.read_csv(f, sep='\s+', index_col='colors')
+            self.transforms = transform
 
 
 
