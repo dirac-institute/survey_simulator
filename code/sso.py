@@ -20,7 +20,7 @@ np.set_printoptions(precision=15)
 
 class asteroids:
 
-    def __init__(self, oorbElem, name):
+    def __init__(self, oorbElem, name, sedtype):
 
         """Asteroids class stores all information relevant to an asteroid.
         Includes asteroid ID, elements, H & G values, state vectors, nightly states, etc.
@@ -35,10 +35,12 @@ class asteroids:
         """
         self.id = int(oorbElem[0][0])
         self.name=name
+        self.sedtype = sedtype
 
         # Computing Spice ID from asteroid ID in list.
         self.spiceid=self.internal2spice(self.id)
         self.oorb_orbit = oorbElem
+        #self.color = 
 
         self.ephcount=0
 
@@ -274,13 +276,15 @@ class asteroids:
         
 #-----------------------------------------------------------------------------------------------
 
-    def filtermag(self, vismag, filterColor):
+    def filtermag(self, vismag, filtercolor, asteroidcolor, transforms):
 
         """Translate visual magnitude to various other bands as if S-type asteroid
         Parameters
         ----------
-            filter : string
+            filtercolor : string
                 filter observed with, currently any of the 6 LSST filters - u, g, r, i, z, y
+            asteroidcolor : string
+                Color of the asteroid
             vismag : float
                 Apparent visual magnitude of the asteroid
             
@@ -291,17 +295,33 @@ class asteroids:
 
         """
 
-        stype = {'u'  : -1.927,  # filter translations for s type asteroid
-                 'g'  : -0.395,
-                 'r'  :  0.255,
-                 'i'  :  0.455,
-                 'z'  :  0.401,
-                 'y'  :  0.406,
-                 None :  0
-        }
-
-        V = vismag - stype[filterColor]
+        V = vismag - transforms[filtercolor][asteroidcolor]
         return V
+
+#-----------------------------------------------------------------------------------------------
+
+    def probdetect(self, filtermag, limmag, fillfactor):
+
+        """ Find the probability of a detection given a visual magnitude, limiting magnitude, and fillfactor, 
+        determined by the fading function from -include citation-
+
+        Parameters
+        ----------
+            filtermag: float
+                magnitude of object in filter used for that field
+            limmag:
+                limiting magnitude of the field
+            fillfactor:
+                fraction of the field detectable due to ccd seperations
+
+        Returns
+        -------
+        P: float
+            Probability of a detection
+        """
+        w = 0.1
+        P = fillfactor / (1 + np.exp((filtermag - limmag) / w))
+        return P
 
 #-----------------------------------------------------------------------------------------------
             
@@ -559,11 +579,13 @@ class asteroids:
                 VH0=Vmag-self.oorb_orbit[0][10]
 
                 #computing filter magnitude
-                filtmag = self.filtermag(Vmag, filters[i])
-                filtVH0 = self.filtermag(VH0, filters[i])
-                limfilter = self.filtermag(limmag[i], filters[i])
+                filtmag = self.filtermag(Vmag, filters[i], self.sedtype, camera.transforms)
+                filtVH0 = self.filtermag(VH0, filters[i], self.sedtype, camera.transforms)
+                
+                #computing probability of a detection
+                Prob = self.probdetect(filtmag, limmag[i], camera.fillfactor)
 
-                if filtmag < limfilter:
+                if np.random.rand() < Prob:
 
     #                opstr="%-9d "  %(self.id)
                     opstr="%-10s " %(self.name)
@@ -639,7 +661,7 @@ class asteroidlist(asteroids):
 
         #Initializing asteroid objects for each orbit.
         for i in np.arange(object1-1,object1-1+nObjects):
-            self.asteroids.append(asteroids([ephemObj.oorbElem[i]], orbObj.orbits.objId[i]))
+            self.asteroids.append(asteroids([ephemObj.oorbElem[i]], orbObj.orbits.objId[i], orbObj.orbits['sed_filename'][i]))
 
         for i in self.asteroids:
             i.elem2vec()
@@ -712,11 +734,10 @@ class asteroidlist(asteroids):
             i.nightlystates([starttime, stoptime])
             [times,ids,filters,limmags]= i.shortlist(camera,threshold)
             i.checkvisspice(obscode,camera,times,ids,filters,limmags)
-            sys.stdout.flush()
             del i
             del self.asteroids[0]
             count=count+1
-
+        sys.stdout.flush()
         # Unloading all SPICE kernels required for simulation
         sp.unload(camera.ikfile)
         sp.unload(camera.ckfile)
