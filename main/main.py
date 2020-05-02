@@ -60,6 +60,10 @@ try:
     cameradef_file    = config.get('CAMERA','Camera')
 except:
     sys.exit('Camera FOV definition file not provided')
+try:
+    filter_transforms = config.get('CAMERA','Filter transformations')
+except:
+    sys.exit('Filter transformations not provided')
 
 threshold             = config.getfloat('CAMERA','Threshold')
 if (threshold > 90.0):
@@ -204,7 +208,7 @@ if makespks=='T':
                 alist.append(a)
 
 # Loading camera FOV definition
-c=ts.camera(cameradef_file,spiceik)
+c=ts.camera(cameradef_file,spiceik, filter_transforms)
 
 # Loading list of pointings from survey and creating SPICE kernels
 c.createckfk(obscode, surveydb, starttime, Field1, nFields, spice_mk)
