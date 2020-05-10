@@ -16,11 +16,11 @@ class Orbits(object):
         # Which columns are required depends on self.orb_format.
         self.dataCols = {}
         self.dataCols['COM'] = ['objId', 'q', 'e', 'inc', 'Omega', 'argPeri',
-                                'tPeri', 'epoch', 'H', 'g', 'sed_filename']
+                                'tPeri', 'epoch', 'H', 'g', 'sed']
         self.dataCols['KEP'] = ['objId', 'a', 'e', 'inc', 'Omega', 'argPeri',
-                                'meanAnomaly', 'epoch', 'H', 'g', 'sed_filename']
+                                'meanAnomaly', 'epoch', 'H', 'g', 'sed']
         self.dataCols['CART'] = ['objId', 'x', 'y', 'z', 'xdot', 'ydot', 'zdot',
-                                 'epoch', 'H', 'g', 'sed_filename']
+                                 'epoch', 'H', 'g', 'sed']
 
     def __len__(self):
         return len(self.orbits)
@@ -63,7 +63,7 @@ class Orbits(object):
         If objid is not present in orbits, a sequential series of integers will be used.
         If H is not present in orbits, a default value of 20 will be used.
         If g is not present in orbits, a default value of 0.15 will be used.
-        If sed_filename is not present in orbits, either C or S type will be assigned,
+        If sed is not present in orbits, either C or S type will be assigned,
         according to the semi-major axis value.
 
         Parameters
@@ -128,8 +128,8 @@ class Orbits(object):
             orbits['H'] = np.zeros(nSso) + 20.0
         if 'g' not in orbits:
             orbits['g'] = np.zeros(nSso) + 0.15
-        if 'sed_filename' not in orbits:
-            orbits['sed_filename'] = self.assignSed(orbits)
+        if 'sed' not in orbits:
+            orbits['sed'] = self.assignSed(orbits)
 
         # Make sure we gave all the columns we need.
         for col in self.dataCols[self.orb_format]:
@@ -278,7 +278,7 @@ class Orbits(object):
         altNames['H'] = ['H', 'magH', 'magHv', 'Hv', 'H_v']
         altNames['g'] = ['g', 'phaseV', 'phase', 'gV', 'phase_g', 'G']
         altNames['meanAnomaly'] = ['meanAnomaly', 'meanAnom', 'M', 'ma']
-        altNames['sed_filename'] = ['sed_filename', 'sed']
+        altNames['sed'] = ['sed', 'color']
         altNames['xdot'] = ['xdot', 'xDot']
         altNames['ydot'] = ['ydot', 'yDot']
         altNames['zdot'] = ['zdot', 'zDot']
