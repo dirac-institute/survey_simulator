@@ -661,7 +661,7 @@ class asteroidlist(asteroids):
 
         #Initializing asteroid objects for each orbit.
         for i in np.arange(object1-1,object1-1+nObjects):
-            self.asteroids.append(asteroids([ephemObj.oorbElem[i]], orbObj.orbits.objId[i], orbObj.orbits['sed_filename'][i]))
+            self.asteroids.append(asteroids([ephemObj.oorbElem[i]], orbObj.orbits.objId[i], orbObj.orbits['sed'][i]))
 
         for i in self.asteroids:
             i.elem2vec()
