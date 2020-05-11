@@ -359,10 +359,11 @@ class camera:
         self.rotSkyPos=np.zeros(nlines)
         self.filter=np.zeros(nlines, dtype=str)
         self.fiveSigmaDepth=np.zeros(nlines)
+        self.seeingFwhmEff=np.zeros(nlines)
 
         count=0
 #        exec_str='SELECT obsHistID,expMJD,fieldRA,fieldDec,rotSkyPos FROM Summary order by expMJD limit %d,%d' %(line1-1,nlines)
-        exec_str='SELECT observationId,observationStartMJD,FieldRA,FieldDec,rotSkyPos,filter,fiveSigmaDepth FROM SummaryAllProps order by observationStartMJD limit %d,%d' %(line1-1,nlines)
+        exec_str='SELECT observationId,observationStartMJD,FieldRA,FieldDec,rotSkyPos,filter,fiveSigmaDepth,seeingFwhmEff FROM SummaryAllProps order by observationStartMJD limit %d,%d' %(line1-1,nlines)
         for row in c.execute(exec_str):
             self.obsHistID[count]      = row[0]
             self.fieldMJD[count]       = row[1]
@@ -371,6 +372,7 @@ class camera:
             self.rotSkyPos[count]      = np.deg2rad(row[4])
             self.filter[count]         = row[5]
             self.fiveSigmaDepth[count] = row[6]
+            self.seeingFwhmEff[count]  = row[7]
             count +=1
 
         # startdate is 0 if not provided by user. In this case use the default MJDs.

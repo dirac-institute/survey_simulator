@@ -300,6 +300,45 @@ class asteroids:
 
 #-----------------------------------------------------------------------------------------------
 
+    def findTrailingLoss(self, dRa, dDec, seeing, texp=30.0):
+        """ Find the trailing loss from trailing and detection
+
+        Parameters
+        ----------
+            dRa: float
+                rate of change of RA on the sky, deg/sec
+            dDec: float
+                rate of change of Dec on the sky, deg/sec
+            seeing: float
+                Fwhm of the seeing disk, arcseconds
+            texp: float
+                exposure length, defaults to 30 seconds
+
+        Returns
+        -------
+            dmag: float
+                loss in detection magnitude
+        
+        """
+
+        vel = np.sqrt(dRa ** 2 + dDec ** 2)
+        vel = vel * 3600 # convert to arcsec / sec
+
+        a_trail = 0.761
+        b_trail = 1.162
+        a_det = 0.420
+        b_det = 0.003
+
+        x = vel * texp / seeing 
+        dmagTrail = 1.25 * np.log10(1 + a_trail * x ** 2 / (1 + b_trail * x))
+        dmagDetect = 1.25 * np.log10(1 + a_det * x ** 2 / (1 + b_det * x))
+
+        dmag = dmagDetect + dmagTrail
+
+        return dmag
+
+#-----------------------------------------------------------------------------------------------
+
     def probdetect(self, filtermag, limmag, fillfactor):
 
         """ Find the probability of a detection given a visual magnitude, limiting magnitude, and fillfactor, 
@@ -501,6 +540,7 @@ class asteroids:
         fdec=camera.fieldDec
         filtertype=camera.filter
         limmag=camera.fiveSigmaDepth
+        seeing = camera.seeingFwhmEff
 
         # Cosine of threshold angle
         cos_thresh=np.cos(thresh_angle)
@@ -536,11 +576,11 @@ class asteroids:
         self.candidatefields=(self.sep_weight==0) | (self.nightlyr[indices] < 0.03*shared.au2km)
 
         # return a numpy array of candidate frame times, frame id's, frame filters, and frame limiting magnitudes
-        return(t[self.candidatefields], ids[self.candidatefields], filtertype[self.candidatefields], limmag[self.candidatefields])
+        return(t[self.candidatefields], ids[self.candidatefields], filtertype[self.candidatefields], limmag[self.candidatefields], seeing[self.candidatefields])
 
 #-----------------------------------------------------------------------------------------------
     
-    def checkvisspice(self,observer, camera, time, ids, filters, limmag):
+    def checkvisspice(self,observer, camera, time, ids, filters, limmag, seeing):
 
         """Use SPICE to check whether asteroid is in FOV at input times
 
@@ -581,9 +621,13 @@ class asteroids:
                 #computing filter magnitude
                 filtmag = self.filtermag(Vmag, filters[i], self.sedtype, camera.transforms)
                 filtVH0 = self.filtermag(VH0, filters[i], self.sedtype, camera.transforms)
-                
+
+                #computing trailing and detection losses
+                dmag = self.findTrailingLoss(radec[4], radec[5], seeing[i])
+
                 #computing probability of a detection
-                Prob = self.probdetect(filtmag, limmag[i], camera.fillfactor)
+                detectmag = filtmag +  dmag
+                Prob = self.probdetect(detectmag, limmag[i], camera.fillfactor)
 
                 if np.random.rand() < Prob:
 
@@ -732,8 +776,8 @@ class asteroidlist(asteroids):
         while self.asteroids:
             i=self.asteroids[0]
             i.nightlystates([starttime, stoptime])
-            [times,ids,filters,limmags]= i.shortlist(camera,threshold)
-            i.checkvisspice(obscode,camera,times,ids,filters,limmags)
+            [times,ids,filters,limmags,seeing]= i.shortlist(camera,threshold)
+            i.checkvisspice(obscode,camera,times,ids,filters,limmags,seeing)
             del i
             del self.asteroids[0]
             count=count+1
