@@ -178,7 +178,7 @@ class Orbits(object):
         chance = np.random.random(len(orbits))
         prob_c = 0.5 * a - 1.0
         # if chance <= prob_c:
-        sedvals = np.where(chance <= prob_c, 'C.dat', 'S.dat')
+        sedvals = np.where(chance <= prob_c, 'C', 'S')
         return sedvals
 
     def readOrbits(self, orbitfile, delim=None, skiprows=None):
